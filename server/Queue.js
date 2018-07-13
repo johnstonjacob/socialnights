@@ -29,9 +29,12 @@ module.exports = class Queue {
 
   async playNext() {
     const nextSong = await this.Redis.zrevrangeAsync(`${this.roomID}:queue`, 0, 0);
-    const selector = JSON.parse(nextSong[0]).addedBy;
-    this.Spotify.playSpecific(JSON.parse(nextSong[0]).uri);
-    this.Redis.zremAsync(`${this.roomID}:queue`, nextSong[0]);
-    return selector;
+    if (nextSong) {
+      const selector = JSON.parse(nextSong[0]).addedBy;
+      this.Spotify.playSpecific(JSON.parse(nextSong[0]).uri);
+      this.Redis.zremAsync(`${this.roomID}:queue`, nextSong[0]);
+      return selector;
+    }
+    return null;
   }
 };
