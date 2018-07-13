@@ -11,9 +11,10 @@ import Login from '../src/components/Login.vue';
 
 Vue.config.productionTip = false;
 
-const SERVER_URL = 'http://localhost:8082';
+const SERVER_URL = 'https://johnstonjacob.com/';
+
 const socket = io.connect(SERVER_URL, {
-  secure: false,
+  secure: true,
   reconnection: true,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000,
