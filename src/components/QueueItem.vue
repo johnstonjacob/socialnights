@@ -1,54 +1,82 @@
 <template>
-      <div class="queue-track">
-        <img :src="track.album.images[2].url" class="album-image">
-        <div class="track-item">{{ track.name }}</div>
-        <div class="track-item">{{ track.artists[0].name }}</div>
-        <div class="track-item">{{ track.album.name }}</div>
-        <div class="queue-button queue-vote up" v-on:click="upvoteClicked(track)">^</div>
-        <div class="queue-button queue-vote down" v-on:click="downvoteClicked(track)">V</div>
-      </div>
+  <div class="queue-track">
+    <img :src="track.album.images[2].url" class="album-image">
+    <div class="track-item song-info">
+      {{ track.name }}
+      <div class="song-artist">{{ track.artists[0].name }}</div>
+    </div>
+    <div class="queue-button" @click="onQueueUpvote(track)">
+      <svg viewBox="0 0 129 129" class="queue-vote" :class="{ voted: getVote === 1}">
+        <g transform="matrix(1 0 0 -1 0 129)">
+        <path d="m121.3,34.6c-1.6-1.6-4.2-1.6-5.8,0l-51,51.1-51.1-51.1c-1.6-1.6-4.2-1.6-5.8,0-1.6,1.6-1.6,
+        4.2 0,5.8l53.9,53.9c0.8,0.8 1.8,1.2 2.9,1.2 1,0 2.1-0.4 2.9-1.2l53.9-53.9c1.7-1.6 1.7-4.2 0.1-5.8z"/>
+        </g>
+      </svg>
+    </div>
+    <div class="queue-button" @click="onQueueDownvote(track)">
+      <svg viewBox="0 0 129 129" class="queue-vote" :class="{ voted: getVote === -1}">
+        <path d="m121.3,34.6c-1.6-1.6-4.2-1.6-5.8,0l-51,51.1-51.1-51.1c-1.6-1.6-4.2-1.6-5.8,0-1.6,1.6-1.6,
+        4.2 0,5.8l53.9,53.9c0.8,0.8 1.8,1.2 2.9,1.2 1,0 2.1-0.4 2.9-1.2l53.9-53.9c1.7-1.6 1.7-4.2 0.1-5.8z"/>
+      </svg>
+    </div>
+  </div>
 </template>
 
 <script>
+import { mapActions, mapGetters } from 'vuex';
+
 export default {
   name: 'QueueItem',
-  props: ['queueUpvote', 'track', 'queueDownvote'],
+  props: ['track'],
   data() {
     return {
-      hasDownvoted: false,
-      hasUpvoted: false,
+      vote: 0,
     };
   },
   methods: {
-    downvoteClicked(track) {
-      if (!this.hasDownvoted) {
-        this.hasDownvoted = true;
-        this.hasUpvoted = false;
-        this.queueDownvote(track);
+    onQueueDownvote(track) {
+      console.log('HERE');
+      const trackID = this.track.id;
+      if (this.getVote !== -1) {
+        this.voteOn({ trackID, vote: -1 });
+        this.$emit('queueVote', track, -1);
+      } else {
+        this.voteOn(trackID, 1);
+        this.$emit('queueVote', track, 1);
       }
     },
-    upvoteClicked(track) {
-      if (!this.hasUpvoted) {
-        this.hasUpvoted = true;
-        this.hasDownvoted = false;
-        this.queueUpvote(track);
-      } else console.log('you have voted!!!');
+    async onQueueUpvote(track) {
+      const trackID = this.track.id;
+      if (this.getVote !== 1) {
+        this.voteOn({ trackID, vote: 1 });
+        this.$emit('queueVote', track, 1);
+      } else {
+        this.voteOn({ trackID, vote: -1 });
+        this.$emit('queueVote', track, -1);
+      }
     },
+    ...mapActions(['voteOn', 'addToQueue']),
+  },
+  computed: {
+    ...mapGetters(['getVotes']),
+    getVote() {
+      const res = this.getVotes;
+      return res[this.track.id];
+    },
+  },
+  created(trackID = this.track.id) {
+    this.addToQueue(trackID);
   },
 };
 </script>
 
 <style scoped>
-queue-track-list:nth-child(even) {
-  background: rgba(255, 255, 255, 0.2);
-}
-
 .queue-track {
   display: flex;
   flex-flow: row nowrap;
   justify-content: space-between;
   align-items: center;
-  color: white;
+  color: #fff;
 }
 
 .track-item {
@@ -56,20 +84,32 @@ queue-track-list:nth-child(even) {
   flex-basis: 0;
 }
 
-.empty-image {
-  width: 64px;
+.song-info {
+  color: #6495ed;
+  font-size: 1.2em;
+}
+
+.song-artist {
+  color: #fff;
+  font-size: .8em;
+  margin-top: .5vh;
+}
+
+.queue-button {
+  width: 32px;
+  height: 32px;
+  margin-right: 3px;
+  border-radius: 50%;
 }
 
 .queue-vote {
-  width: 32px;
-  height: 32px;
+  fill: #fff;
+  padding: 4px;
+  width: 24px;
+  height: 24px;
 }
 
-.up {
-  background: green;
-}
-
-.down {
-  background: red;
+.voted {
+  fill: #6495ed;
 }
 </style>

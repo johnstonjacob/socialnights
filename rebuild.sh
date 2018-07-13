@@ -1,0 +1,1 @@
+npm run build && docker stop socialnights && docker rm socialnights && docker build -t socialnights . && docker run --name socialnights -v /etc/letsencrypt/:/etc/letsencrypt/ -p 8585:8080 -d socialnights 

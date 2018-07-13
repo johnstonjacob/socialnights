@@ -1,85 +1,56 @@
 <template>
   <div>
-    <h1>Welcome to Party Pooper</h1>
+    <h1>Social <span class="flicker">Nights</span></h1>
     <ul class="menu-container main-menu">
-      <li class="menu-item main-menu-item" v-if="!$store.state.joining" v-on:click="$store.commit('setJoining', true)">
-        Join a Room
+      <li class="join-header main-menu-item">
+        Join a Room:
       </li>
-      <li class="menu-item main-menu-item" v-if="!$store.state.joining" v-on:click="hostRoom">
-        <form id="loginForm" action="http://localhost:8082/auth/spotify" method="GET">
-          Host a Room
-        </form>
+      <li class="room-id">
+        <input type="text" id="room-input" class="text-input" v-model="joinRoomID"
+        placeholder="Room ID" @keyup.enter="joinRoom"/>
       </li>
-      <li class="join-header" v-if="$store.state.joining">
-        Username:
-      </li>
-      <li v-if="$store.state.joining">
-        <input type="text" class="join-input" v-model="userName" />
-      </li>
-      <li class="join-error" v-if="$store.state.joining">
-        {{ userNameError }}
-      </li>
-      <li class="join-header" v-if="$store.state.joining">
-        Room:
-      </li>
-      <li v-if="$store.state.joining">
-        <input type="text" class="join-input" v-on:keyup.enter="joinRoom" v-model="joinRoomId" />
-      </li>
-      <li class="join-error" v-if="$store.state.joining">
+      <li class="join-error">
         {{ roomError }}
       </li>
-      <li class="menu-item join-item" v-if="$store.state.joining" v-on:click="joinRoom">
-        Join
+      <li class="menu-item main-menu-item host-button" @click="hostRoom">
+        <form id="loginForm" action="https://johnstonjacob.com/socialnights/auth/spotify" method="GET">
+          Host a Room
+        </form>
       </li>
     </ul>
   </div>
 </template>
 
 <script>
-
 export default {
   name: 'Splash',
-
   data() {
     return {
-      userName: '',
-      joinRoomId: '',
-      userNameError: '',
+      joinRoomID: '',
       roomError: '',
     };
   },
-
+  mounted() {
+    document.getElementById('room-input').focus();
+  },
   methods: {
     hostRoom() {
       document.getElementById('loginForm').submit();
     },
-
     joinRoom() {
       this.roomError = '';
-      this.userNameError = '';
 
-      if (this.joinRoomId.length !== 5) {
+      if (this.joinRoomID.length !== 5) {
         this.roomError = 'Room must be 5 characters';
       }
-      if (this.userName.length > 16) {
-        this.userNameError = 'Username must be under 16 characters';
+      if (!/^[a-z0-9]+$/i.test(this.joinRoomID)) {
+        this.roomError = 'Room ID only uses letters and numbers';
       }
-      if (!/^[a-z0-9]+$/i.test(this.joinRoomId)) {
-        this.roomError = 'Room only uses letters and numbers';
-      }
-      if (!/^[a-z0-9]+$/i.test(this.userName)) {
-        this.userNameError = 'Username can only use letters and numbers';
-      }
-      if (!this.joinRoomId) {
+      if (!this.joinRoomID) {
         this.roomError = 'Enter a room ID';
       }
-      if (!this.userName.length) {
-        this.userNameError = 'Enter a username';
-      }
-      if (!this.userNameError && !this.roomError) {
-        this.$store.commit('setUserName', this.userName);
-        this.$store.commit('setHost', false);
-        this.$router.push({ path: `/room/${this.joinRoomId}` });
+      if (!this.roomError) {
+        this.$router.push({ path: `/room/${this.joinRoomID}` });
       }
     },
   },
@@ -87,60 +58,78 @@ export default {
 </script>
 
 <style scoped>
+h1 {
+  margin: .3em;
+  text-shadow: 0 0 1em #fff, 0 0 .4em #ff1493;
+}
+
+li {
+  display: inline-block;
+}
+
+.flicker {
+  animation: flicker 10s linear infinite;
+}
+
+@keyframes flicker {
+  0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% {
+    opacity: 1;
+    text-shadow: 0 0 1em #fff, 0 0 .4em #0ff;
+  }
+  20%, 21.999%, 63%, 63.999%, 65%, 69.999% {
+    opacity: 0.4;
+    text-shadow: none;
+  }
+}
+
 .main-menu {
   margin: auto;
-  width: 40%;
+  width: 100%;
 }
 
 .main-menu-item {
-  font-size: 3vw;
+  width: 80%;
+  font-family: "Comfortaa";
+  font-size: 1.5em;
   font-weight: 700;
-  padding: 12px;
-  margin: 10px;
-  border: 2px solid #fff;
-  border-radius: 15px;
+  padding: 2.5vw 1.5vw;
+  margin: 1vh 0;
 }
 
 .join-header {
-  font-size: 2.5vw;
-  color: #fff;
   text-align: left;
-  margin-left: 15%;
-  margin-top: 20px;
-  margin-bottom: 0;
+  padding-bottom: 0;
 }
 
-.join-input {
-  overflow: auto;
-  width: 75%;
-  font-size: 3vw;
-  font-weight: 700;
-  color: #fff;
-  padding: 5px;
-  margin: 3px 10px 0px 10px;
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid #fff;
-  border-radius: 15px;
+.room-id {
+  width: 100%;
 }
 
-.join-input:focus {
-  outline: none;
-  color: #db7095;
-  background: #fff;
-}
-
-.join-item {
-  font-size: 3vw;
-  font-weight: 700;
-  width: 20%;
-  padding: 12px;
-  margin: auto;
-  margin-top: 15px;
-  border: 2px solid #fff;
-  border-radius: 15px;
+.room-id > input {
+  width: 80%;
+  margin: 1vw 0;
 }
 
 .join-error {
+  margin-top: 0;
   color: #900;
+}
+
+.host-button {
+  margin-top: 2vh;
+}
+
+@media screen and (min-width: 900px) {
+  .main-menu {
+    width: 50%;
+  }
+
+  .main-menu-item {
+    padding: 1.5vw;
+  }
+
+  .join-header {
+    padding-bottom: 0;
+  }
 }
 </style>

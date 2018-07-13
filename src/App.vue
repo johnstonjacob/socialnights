@@ -1,87 +1,86 @@
 <template>
   <div id="app">
-    <ul class="menu-container">
-      <li class="menu-item topbar-item" v-on:click="homeRoute">Party Pooper</li>
-    </ul>
+    <NavBar />
     <router-view></router-view>
   </div>
 </template>
 
 <script>
+import NavBar from './components/NavBar.vue';
 
 export default {
-  name: 'app',
+  name: 'App',
 
-  methods: {
-    homeRoute() {
-      this.$store.commit('setJoining', false);
-      this.$router.push({ path: '/' });
-    },
-
-    loginRoute() {
-      this.$router.push({ path: '/login' });
-    },
+  components: {
+    NavBar,
   },
 };
 </script>
 
 <style>
-@import url("https://fonts.googleapis.com/css?family=Kalam:400,700");
+@import '../public/css-reset.css';
+@import url("https://fonts.googleapis.com/css?family=Monoton");
+@import url("https://fonts.googleapis.com/css?family=Comfortaa");
 @import url("https://fonts.googleapis.com/css?family=Roboto");
 
 html {
   height: 100%;
-  background: linear-gradient(20deg,#db7095,#daa360) fixed;
+  background: #111;
 }
 
-body{
-  margin: 0;
+body {
   font-family: Roboto;
+  color: #fff;
+  font-size: calc(.6rem + 1vw);
 }
 
 h1 {
-  font-family: "Kalam";
-  color: #fff;
+  font-family: "Monoton";
+  font-weight: 400;
   text-align: center;
-  font-size: 8vw;
-  margin: 2px;
-  animation: shadow 2s infinite alternate;
+  font-size: 5em;
 }
 
-@keyframes shadow {
-  0% {
-    text-shadow: 3px 3px #ff1493;
-  }
-  100% {
-    text-shadow: 3px 3px #0ff;
-  }
+h2, h3 {
+  font-family: "Comfortaa";
+  font-weight: 400;
 }
+
 
 .menu-container {
   list-style-type: none;
   text-align: center;
-  padding: 0;
-  margin: 0;
   overflow: hidden;
-  background: transparent;
 }
 
 .menu-item {
-  display: block;
-  color: #fff;
+  display: inline-block;
+  background: #333;
+  border-radius: 4vh;
 }
 
-.topbar-item {
-  float: left;
-  font-size: 20px;
-  padding: 8px;
-  margin: 5px;
-  border-radius: 5px;
+.text-input {
+  overflow: auto;
+  font-family: "Comfortaa";
+  color: #777;
+  font-size: 1.5em;
+  font-weight: 700;
+  padding: 1vw 1.5vw;
+  background: #333;
+  border: 1px solid #fff;
+  border-radius: 4vh;
 }
 
-.menu-item:hover {
-  color: #db7095;
+.text-input:focus {
+  outline: none;
   background: #fff;
-  cursor: pointer;
+}
+
+@media screen and (min-width: 900px) {
+  .menu-item:hover {
+    cursor: pointer;
+    background: #0ff;
+    transition: background-color 3s ease;
+  }
 }
 </style>

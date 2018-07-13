@@ -1,21 +1,23 @@
 <template>
   <div class="player">
-    <div v-if="playerInfo.item" class="player-info">
+    <div v-if="currentlyPlaying" class="player-info">
+      <img class="album-art" :src="currentlyPlaying.item.album.images[0].url" />
       <ul class="menu-container song-info">
-        <li class="song-info-item song-title">{{ playerInfo.item.name}}</li>
-        <li class="song-info-item">{{ playerInfo.item.artists[0].name }}</li>
+        <li class="song-info-item song-title">{{ currentlyPlaying.item.name}}</li>
+        <li class="song-info-item">{{ currentlyPlaying.item.artists[0].name }}</li>
       </ul>
-      <img class="album-art" :src="playerInfo.item.album.images[0].url" />
-    </div>
     <div id="progress-bar">
-      <div id="progress"></div>
+      <span id="progress"></span>
     </div>
-    <ul class="menu-container controls" v-if="isHost" >
-      <li class="menu-item controls-item" v-on:click="onClickPlay()">{{ playButton }}//TODO</li>
-      <li class="menu-item controls-item" v-on:click="onClickNext()">Next //TODO</li>
-      <li class="menu-item controls-item" v-on:click="getInfoPressed">GetInfo</li>
-    </ul>
-  </div>
+    </div>
+    <div v-else class="require-playback">
+      <h2>Please start playback on your device and refresh the page.</h2>
+    </div>
+    <!-- <ul class="menu-container controls" v-if="$route.query.host && currentlyPlaying">
+      <li class="menu-item controls-item" @click="onClickPlay">{{ playButton }}//TODO</li>
+      <li class="menu-item controls-item" @click="onClickNext">Next //TODO</li>
+    </ul> -->
+</div>
 </template>
 
 <script>
@@ -39,39 +41,35 @@ export default {
       baseline: 0,
     };
   },
-
-  props: {
-    roomId: { type: String, required: true },
-    isHost: { type: Boolean, required: true },
-    getInfoPressed: { type: Function, required: true },
-    playerInfo: { type: Object, required: false },
-  },
-
+  props: ['currentlyPlaying'],
   mounted() {
     this.timer = new Tock({
       interval: 50,
       callback: () => {
-        const elapsed = this.baseline + this.timer.lap();
-        console.log(this.timer.lap());
-        const progress = document.getElementById('progress');
-        const percent = (elapsed / this.duration) * 100;
-        const width = percent <= 100 ? percent : 100;
-        progress.style.width = `${width}%`;
+        if (document.getElementById('progress')) {
+          const elapsed = this.baseline + this.timer.lap();
+          const progress = document.getElementById('progress');
+          const percent = (elapsed / this.duration) * 100;
+          const width = percent <= 100 ? percent : 100;
+          progress.style.width = `${width}%`;
+        }
       },
     });
     this.timer.start();
   },
 
   watch: {
-    playerInfo(newInfo) {
-      const dur = newInfo.item.duration_ms;
-      const el = newInfo.progress_ms;
+    currentlyPlaying(newInfo) {
+      if (this.currentlyPlaying) {
+        const dur = newInfo.item.duration_ms;
+        const el = newInfo.progress_ms;
 
-      this.duration = dur;
-      this.baseline = el;
+        this.duration = dur;
+        this.baseline = el;
 
-      this.timer.reset();
-      this.timer.start();
+        this.timer.reset();
+        this.timer.start();
+      }
     },
   },
 
@@ -89,53 +87,74 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
+.player {
+  margin: 2vw;
+}
+
 .player-info {
   margin: auto;
-  width: 80%;
-  margin-bottom: 20px;
-}
-
-.song-info-item {
-  font-size: 1.5vw;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 10px;
-}
-
-.song-title {
-  color: #6495ed;
-  font-size: 2vw;
-  margin-bottom: 0;
+  margin-bottom: 5px;
 }
 
 .album-art {
   display: block;
   margin: auto;
-  height: 45%;
-  width: 45%;
+  height: 30vw;
+  width: 30vw;
+}
+
+.song-info {
+  margin-top: 1.25vh;
+}
+
+.song-title {
+  color: #6495ed;
+  font-size: 1.2em;
+  margin-bottom: 1vh;
 }
 
 #progress-bar {
-  width: 80%;
-  background: #fff;
   text-align: left;
-  border-radius: 5px;
+  background-color: #1a1a1a;
+  height: 1.25vh;
+  padding: .3vh;
+  width: 60vw;
+  margin-top: 1vh;
+  margin-bottom: 2vh;
+  border-radius: 5vh;
+  box-shadow: 0 1px 5px #000 inset, 0 1px 0 #444;
 }
 
 #progress {
-  height: 10px;
-  background: linear-gradient(90deg,#0ff,#6495ed);
-  margin-bottom: 20px;
-  border-radius: 5px;
+  display: inline-block;
+  vertical-align: top;
+  background: #6495ed;
+  background-size: 4vh 4vh;
+  height: 100%;
+  border-radius: 5vh;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset;
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, .15) 25%, transparent 25%,
+                    transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%,
+                    transparent 75%, transparent);
+  animation: animate-stripes 5s linear infinite;
+}
+
+@keyframes animate-stripes {
+    0% {background-position: 0 0;} 100% {background-position: 8vh 0;}
+}
+
+.controls {
+  margin-top: .5vw;
 }
 
 .controls-item {
-  display: inline-block;
-  font-size: 1.5vw;
-  padding: 5px 10px;
-  margin: 5px;
-  text-align: center;
-  border-radius: 5px;
+  font-size: 1em;
+  padding: 1vw 2vw;
+  margin: 0 1vw;
+}
+
+.require-playback {
+  margin: 10vh;
 }
 </style>

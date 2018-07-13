@@ -4,7 +4,7 @@ const btoa = require('btoa');
 
 dotenv.config({ silent: true });
 
-class Spotify {
+module.exports = class Spotify {
   constructor(oauth, refresh) {
     this.key = process.env.SPOTIFY_ID;
     this.secret = process.env.SPOTIFY_SECRET;
@@ -18,7 +18,7 @@ class Spotify {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${this.oauth}`,
     };
-    // this.getUserInfo().then(() => this.newPlaylist());
+    console.log('running');
   }
 
   async refreshToken() {
@@ -78,8 +78,7 @@ class Spotify {
       const result = await request(options);
       return result;
     } catch (error) {
-      await this.refreshToken();
-      return this.search(q);
+      return console.log(error);
     }
   }
 
@@ -160,8 +159,5 @@ class Spotify {
       return error;
     }
   }
-}
-const testSpot = new Spotify();
-testSpot.refreshToken();
-// setTimeout(() => testSpot.playSpecific('spotify:album:5b3tupDh9sl0Mf9ZjR989N'));
-module.exports = Spotify;
+};
+

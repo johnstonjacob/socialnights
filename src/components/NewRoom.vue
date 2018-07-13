@@ -1,215 +1,150 @@
 <template>
-  <div class="room" align="center">
-    <h2>Room {{ roomId }}</h2>
-    <div class="content">
-      <Player class="content-item" :isHost="isHost"
-      :roomId="roomId" :getInfoPressed="getInfoPressed" :playerInfo="playerInfo" />
+  <div class="room-container">
+    <div class="room-title"><h2>Room: {{ getRoomID }}</h2></div>
+    <NameEntry v-if="!getUsername" @joinRoomClicked='onJoinRoom'/>
+    <div class="room" align="center" v-else>
+      <Player :currentlyPlaying="currentlyPlaying" />
+      <SkipVoter v-if="currentlyPlaying" @skipVote="onSkipVote" :currentSkipVotes="currentSkipVotes" />
+      <Queue v-if="view === 'Queue'" @queueVote="onQueueVote" :currentQueue="currentQueue"/>
+      <Search v-if="view === 'Search'" @songSearch="onSongSearch"
+      @queueSong="onQueueSong" :searchResults="searchResults" :currentQueue="currentQueue"/>
+      <UserList v-if="view === 'Users'"/>
+      <div class = "bar-margin"></div>
+      <BottomBar @changeView="onChangeView" :view="view"/>
     </div>
-    <table class="members-table">
-      <p class="username">Username: {{ username }}</p>
-      <tr>
-        <th>Room Members</th>
-      </tr>
-      <tr v-for="(member, ind) in members" :key="ind">
-        <td>{{ member }}</td>
-      </tr>
-    </table>
-    <ul class="menu-container voting-menu">
-      <!-- <li class="menu-item voting-item vote-up" v-on:click="upvote">Upvote</li>  -->
-      <li class="menu-item voting-item vote-down" v-on:click="skip">Skip</li>
-      <li class="voting-item score">Track Score: {{ votes }}</li>
-    </ul>
-    <ul class="menu-container bottom-toggle">
-      <li class="menu-item toggle-button" v-bind:class="{ active: !$store.state.searching }"
-        v-on:click="$store.commit('setSearching', false)">Queue</li>
-      <li class="menu-item toggle-button" v-bind:class="{ active: $store.state.searching }"
-        v-on:click="$store.commit('setSearching', true)">Search</li>
-    </ul>
-    <Queue v-if="!$store.state.searching" :curQueue="curQueue"
-    :queueUpvote="queueUpvote" :queueDownvote="queueDownvote" />
-    <Search v-if="$store.state.searching" :searchInput="searchInput" :searchRes="searchRes" :queue="queue" />
   </div>
 </template>
 
 <script>
-import Vue from 'vue';
-import VueSocketio from 'vue-socket.io';
+import { mapGetters, mapActions } from 'vuex';
 
 import Player from './Player.vue';
 import Search from './Search.vue';
 import Queue from './Queue.vue';
+import UserList from './UserList.vue';
+import NameEntry from './NameEntry.vue';
+import SkipVoter from './SkipVoter.vue';
+import BottomBar from './BottomBar.vue';
 
-Vue.use(VueSocketio, 'http://localhost:8082');
 export default {
   name: 'Room',
-  props: ['roomId'],
   components: {
     Player,
     Search,
     Queue,
+    UserList,
+    NameEntry,
+    SkipVoter,
+    BottomBar,
   },
   data() {
     return {
-      room: this.roomId,
-      username: this.$route.query.username || this.$store.state.userName,
-      connected: false,
-      members: [],
-      isHost: false,
-      searchRes: {},
-      playerInfo: {},
-      vote: 0,
-      votes: 0,
-      curQueue: [],
-      hasSkipped: false,
+      view: 'Queue',
+      searchResults: [],
+      currentQueue: [],
+      currentlyPlaying: null,
+      currentSkipVotes: 0,
+      scores: [],
     };
   },
-  sockets: {
-    memberListUpdate(members) {
-      this.members = Object.values(members);
-    },
-    searchResponse(results) {
-      this.searchRes = JSON.parse(results).tracks.items;
-    },
-    infoResponse(results) {
-      if (this.playerInfo.item && this.playerInfo.item.id !== results.item.id) {
-        this.hasSkipped = false;
-      }
-      this.playerInfo = results;
-    },
-    queueUpdate(queue) {
-      const parsed = queue.map((track) => JSON.parse(track));
-      this.curQueue = parsed;
-      setTimeout(this.getInfoPressed, 2000);
-    },
-  },
+  computed: mapGetters(['getUsername', 'getRoomID', 'getUsersList']),
   methods: {
-    joinRoom() {
-      this.$socket.emit('joinRoom', { user: this.username, room: this.room });
-      this.$socket.emit('getInfo');
+    ...mapActions(['updateUsername', 'usernameVerify', 'leaveRoom', 'updateRoomID', 'updateUserList', 'resetSkip']),
+    onChangeView(newView) {
+      this.view = newView;
     },
-    createRoom() {
-      this.$socket.emit('createRoom', { user: this.username, room: this.room });
-      this.isHost = true;
-      this.$socket.emit('getInfo', { room: this.room });
-      this.$socket.emit('getQueue', { room: this.room });
+    onSongSearch(query) {
+      this.$socket.emit('songSearch', { roomID: this.getRoomID, query });
     },
-    searchInput(search) {
-      this.$socket.emit('searchInput', { user: this.username, room: this.room, search });
+    onQueueSong(songInfo) {
+      this.$socket.emit('onQueueSong', { username: this.getUsername, roomID: this.getRoomID, songInfo });
     },
-    getInfoPressed() {
-      this.$socket.emit('getInfo', { room: this.room });
+    onQueueVote(songInfo, vote) {
+      this.$socket.emit('queueVote', { roomID: this.getRoomID, songInfo, vote });
     },
-    upvote() {
-      this.$socket.emit('upvote', { room: this.room, user: this.username });
+    onSkipVote() {
+      this.$socket.emit('skipVote', { roomID: this.getRoomID, userCount: this.getUsersList.length });
     },
-    skip() {
-      if (!this.hasSkipped) {
-        this.$socket.emit('skipVote', {
-          room: this.room,
-          user: this.username,
-          trackid: this.playerInfo.item.id,
-        });
-      }
-      this.hasSkipped = true;
+    onJoinRoom() {
+      this.$socket.emit('joinRoom', { username: this.getUsername, roomID: this.getRoomID });
     },
-    queue(song) {
-      this.$store.commit('setSearching', false);
-      this.$socket.emit('queue', { room: this.room, user: this.username, song });
+    songSearchResponse(searchResults) {
+      this.searchResults = JSON.parse(searchResults).tracks.items;
     },
-    queueUpvote(song) {
-      this.$socket.emit('queueUpvote', { room: this.room, user: this.username, song });
+    updateAll({
+      newQueue,
+      newUserList,
+      currentlyPlaying,
+      skipVotes,
+    }) {
+      if (this.currentlyPlaying && this.currentlyPlaying.item.id !== currentlyPlaying.item.id) this.resetSkip();
+      this.currentQueue = newQueue;
+      this.currentSkipVotes = skipVotes;
+      this.currentlyPlaying = currentlyPlaying;
+      this.updateUserList(newUserList);
     },
-    queueDownvote(song) {
-      this.$socket.emit('queueDownvote', { room: this.room, song });
+    updateQueue(newQueue) {
+      this.currentQueue = newQueue;
+    },
+    getUpdatedUserList(newUserList) {
+      this.updateUserList(newUserList);
     },
   },
   mounted() {
-    if (this.$route.query.host) return this.createRoom();
-    return this.joinRoom();
+    this.$socket.on('songSearchResponse', this.songSearchResponse);
+    this.$socket.on('updateAll', this.updateAll);
+    this.$socket.on('updateQueue', this.updateQueue);
+    this.$socket.on('updateUserList', this.getUpdateUserList);
+    this.$socket.on('reconnect', () => {
+      this.$socket.emit('reconnectClient', { roomID: this.getRoomID, username: this.getUsername });
+    });
+
+    if (this.$route.query.host) {
+      this.updateUsername(this.$route.query.username);
+      this.updateRoomID(this.$route.path.slice(-5));
+      this.$socket.emit('createRoom', { username: this.getUsername, roomID: this.getRoomID });
+    } else {
+      this.updateRoomID(this.$route.path.slice(-5));
+      this.$socket.emit('getUserList', { roomID: this.getRoomID });
+    }
   },
 };
 </script>
 
-
 <style scoped>
 h2 {
-  font-family: 'Kalam';
-  color: #fff;
+  color: #ffcce7;
+  font-size: 2em;
+  padding: 1.2vh 3vh;
+  animation: flicker 10s linear infinite;
+}
+
+@keyframes flicker {
+  0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% {
+    opacity: 1;
+    text-shadow: 0 0 2em #fff, 0 0 1em #ff1493;
+  }
+  20%, 21.999%, 63%, 63.999%, 65%, 69.999% {
+    opacity: 0.4;
+    text-shadow: none;
+  }
+}
+
+.room-container {
   text-align: center;
-  font-size: 5vw;
-  margin: 2px;
 }
 
-.content {
-  display: flex;
-  flex-flow: row wrap;
-  justify-content: center;
-}
-
-.content-item {
-  margin: 10px 50px;
-}
-
-.voting-menu {
+.room-title {
   display: inline-block;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 15px;
-}
-
-.voting-item {
-  display: inline-block;
-  font-weight: 700;
-  padding: 10px;
-  margin: 10px 10px;
-  font-size: 1.5vw;
-  border-radius: 10px;
-}
-
-.vote-up {
-  background: #5cd65c;
-}
-
-.vote-down {
-  background: #f66;
-}
-
-.score {
-  color: #000;
-  background: transparent;
-}
-
-.vote-up:hover {
-  color: #db7095;
-}
-
-.vote-down:hover {
-  color: #daa360;
-}
-
-.toggle-button {
-  display: inline-block;
-  font-size: 1.5vw;
-  padding: 5px 10px;
-  margin: 5px;
   text-align: center;
-  border-radius: 5px;
+  margin-top: 2vh;
+  margin-bottom: 1vh;
+  border: 4px solid #fff;
+  border-radius: 8vh;
+  box-shadow: 0 0 1.5em #fff, 0 0 .8em #0ff, inset 0 0 1.5em #fff, inset 0 0 .8em #0ff;
 }
 
-.toggle-button:hover {
-  background: rgba(255, 255, 255, 0.5);
-}
-
-.members-table {
-  font-size: 1.25vw;
-  position: absolute;
-  text-align: center;
-  top: 5%;
-  right: 8%;
-  color: #fff;
-}
-
-.active {
-  color: #db7095;
-  background: #fff;
+.bar-margin {
+  height: 6vh;
 }
 </style>
