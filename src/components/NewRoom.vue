@@ -95,6 +95,7 @@ export default {
     this.$socket.on('updateAll', this.updateAll);
     this.$socket.on('updateQueue', this.updateQueue);
     this.$socket.on('updateUserList', this.getUpdateUserList);
+    this.$socket.on('invalidRoom', () => this.$router.push('/error'));
     this.$socket.on('reconnect', () => {
       this.$socket.emit('reconnectClient', { roomID: this.getRoomID, username: this.getUsername });
     });

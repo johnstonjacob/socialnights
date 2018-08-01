@@ -98,6 +98,10 @@ module.exports = (io, Spotify, Redis) => { //eslint-disable-line
     // MEMBER
     socket.on('joinRoom', (joinedRoomInfo) => {
       const { roomID, username } = joinedRoomInfo;
+      if (!(roomID in roomList)) {
+        socket.emit('invalidRoom');
+        return;
+      }
 
       socket.join(roomID);
       socket.username = username;
@@ -110,6 +114,10 @@ module.exports = (io, Spotify, Redis) => { //eslint-disable-line
 
     socket.on('onQueueSong', async (addedToQueueInfo) => {
       const { roomID, username, songInfo } = addedToQueueInfo;
+      if (!(roomID in roomList)) {
+        socket.emit('invalidRoom');
+        return;
+      }
       if (roomList[roomID].Queue.songIsUnique(songInfo)) {
         songInfo.addedBy = username;
 
@@ -121,6 +129,10 @@ module.exports = (io, Spotify, Redis) => { //eslint-disable-line
 
     socket.on('queueVote', async (queueVoteInfo) => {
       const { roomID, songInfo, vote } = queueVoteInfo;
+      if (!(roomID in roomList)) {
+        socket.emit('invalidRoom');
+        return;
+      }
 
       await roomList[roomID].Queue.vote(songInfo, vote);
       await roomList[roomID].UserList.changePoints(songInfo.addedBy, vote * 10);
@@ -130,6 +142,10 @@ module.exports = (io, Spotify, Redis) => { //eslint-disable-line
 
     socket.on('skipVote', async (skipVoteInfo) => {
       const { roomID, userCount } = skipVoteInfo;
+      if (!(roomID in roomList)) {
+        socket.emit('invalidRoom');
+        return;
+      }
       roomList[roomID].skipVotes += 1;
 
       if (roomList[roomID].skipVotes >= Math.ceil(userCount * 0.6)) {
@@ -142,23 +158,39 @@ module.exports = (io, Spotify, Redis) => { //eslint-disable-line
 
     socket.on('songSearch', async (searchSongInfo) => {
       const { roomID, query } = searchSongInfo;
+      if (!(roomID in roomList)) {
+        socket.emit('invalidRoom');
+        return;
+      }
       const result = await roomList[roomID].Spotify.search(query);
       socket.emit('songSearchResponse', result);
     });
 
     socket.on('getInfo', async (roomInfo) => {
       const { roomID } = roomInfo;
+      if (!(roomID in roomList)) {
+        socket.emit('invalidRoom');
+        return;
+      }
       roomList[roomID].updateAll();
     });
 
     socket.on('getUserList', async (roomInfo) => {
       const { roomID } = roomInfo;
+      if (!(roomID in roomList)) {
+        socket.emit('invalidRoom');
+        return;
+      }
 
       roomList[roomID].updateAll();
     });
 
     socket.on('disconnect', async () => {
       const { roomID, username } = socket;
+      if (!(roomID in roomList)) {
+        socket.emit('invalidRoom');
+        return;
+      }
       if (roomList[roomID]) {
         roomList[roomID].startReconnectTimer(username, roomID, socket);
       }
@@ -166,6 +198,10 @@ module.exports = (io, Spotify, Redis) => { //eslint-disable-line
 
     socket.on('reconnectClient', (reconnectInfo) => {
       const { roomID, username } = reconnectInfo;
+      if (!(roomID in roomList)) {
+        socket.emit('invalidRoom');
+        return;
+      }
       if (roomList[roomID]) roomList[roomID].stopReconnectTimer(username, socket);
     });
 

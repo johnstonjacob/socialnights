@@ -1,13 +1,14 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import io from 'socket.io-client';
-import store from './store/store';
 
-import App from './App.vue';
-import Splash from '../src/components/Splash.vue';
-import Room from '../src/components/NewRoom.vue';
-import Login from '../src/components/Login.vue';
+import App from '@/App.vue';
+import store from '@/store/store';
 
+import Splash from '@/components/Splash.vue';
+import Room from '@/components/NewRoom.vue';
+import Login from '@/components/Login.vue';
+import ErrorPage from '@/components/ErrorPage.vue';
 
 Vue.config.productionTip = false;
 
@@ -37,6 +38,7 @@ const routes = [
     },
   },
   { path: '/login', component: Login },
+  { path: '/error', component: ErrorPage },
 ];
 
 const router = new VueRouter({

@@ -30,7 +30,7 @@ app.use((req, res, next) => {
   next();
 });
 
-if (process.env.BUILD === 'PROD') {
+if (process.env.BUILD === 'PRODUCTION') {
   app.use('/socialnights', express.static(`${__dirname}/../dist`));
 }
 
